@@ -12,6 +12,7 @@
 #include <serialize.h>
 #include <uint256.h>
 #include <version.h>
+#include <util/strencodings.h>
 
 #include <vector>
 
@@ -117,6 +118,7 @@ class CHashWriter
 {
 private:
     CHash256 ctx;
+    std::string hex;
 
     const int nType;
     const int nVersion;
@@ -128,6 +130,7 @@ public:
     int GetVersion() const { return nVersion; }
 
     void write(const char *pch, size_t size) {
+        hex += HexStr(pch, pch + size);
         ctx.Write((const unsigned char*)pch, size);
     }
 
@@ -136,6 +139,10 @@ public:
         uint256 result;
         ctx.Finalize((unsigned char*)&result);
         return result;
+    }
+
+    const std::string& GetHex() const {
+        return hex;
     }
 
     template<typename T>

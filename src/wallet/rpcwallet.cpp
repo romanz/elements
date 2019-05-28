@@ -215,14 +215,19 @@ static UniValue getnewaddress(const JSONRPCRequest& request)
     }
     pwallet->LearnRelatedScripts(newKey, output_type);
     CTxDestination dest = GetDestinationForKey(newKey, output_type);
+    wallet->WalletLogPrintf("dest: %s\n", EncodeDestination(dest));
     if (gArgs.GetBoolArg("-blindedaddresses", g_con_elementsmode)) {
         CPubKey blinding_pubkey = pwallet->GetBlindingPubKey(GetScriptForDestination(dest));
         dest = GetDestinationForKey(newKey, output_type, blinding_pubkey);
+        wallet->WalletLogPrintf("blinded dest: %s\n", EncodeDestination(dest));
     }
 
     pwallet->SetAddressBook(dest, label, "receive");
+    wallet->WalletLogPrintf("set dest: %s\n", EncodeDestination(dest));
 
-    return EncodeDestination(dest);
+    UniValue enc_dest = EncodeDestination(dest);
+    wallet->WalletLogPrintf("enc_dest: %s\n", enc_dest.getValStr());
+    return enc_dest;
 }
 
 static UniValue getrawchangeaddress(const JSONRPCRequest& request)

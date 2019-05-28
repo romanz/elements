@@ -11,6 +11,7 @@
 #include <pubkey.h>
 #include <script/script.h>
 #include <uint256.h>
+#include <logging.h>
 
 typedef std::vector<unsigned char> valtype;
 
@@ -1563,6 +1564,7 @@ uint256 GetPrevoutHash(const T& txTo)
     for (const auto& txin : txTo.vin) {
         ss << txin.prevout;
     }
+    LogPrintf("GetPrevoutHash: %s\n", ss.GetHex());
     return ss.GetHash();
 }
 
@@ -1573,6 +1575,7 @@ uint256 GetSequenceHash(const T& txTo)
     for (const auto& txin : txTo.vin) {
         ss << txin.nSequence;
     }
+    LogPrintf("GetSequenceHash: %s\n", ss.GetHex());
     return ss.GetHash();
 }
 
@@ -1586,6 +1589,7 @@ uint256 GetIssuanceHash(const T& txTo)
         else
             ss << txin.assetIssuance;
     }
+    LogPrintf("GetIssuanceHash: %s\n", ss.GetHex());
     return ss.GetHash();
 }
 
@@ -1596,6 +1600,7 @@ uint256 GetOutputsHash(const T& txTo)
     for (const auto& txout : txTo.vout) {
         ss << txout;
     }
+    LogPrintf("GetOutputsHash: %s\n", ss.GetHex());
     return ss.GetHash();
 }
 
@@ -1681,6 +1686,7 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
         // Sighash type
         ss << nHashType;
 
+        LogPrintf("serialized hash for segwit: g_con_elementsmode=%d hex=%s\n", g_con_elementsmode, ss.GetHex());
         return ss.GetHash();
     }
 
@@ -1700,6 +1706,7 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
     // Serialize and hash
     CHashWriter ss(SER_GETHASH, 0);
     ss << txTmp << nHashType;
+    LogPrintf("serialized hash hex: %s\n", ss.GetHex());
     return ss.GetHash();
 }
 

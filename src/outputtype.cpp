@@ -9,6 +9,8 @@
 #include <pubkey.h>
 #include <script/script.h>
 #include <script/standard.h>
+#include <logging.h>
+#include <util/strencodings.h>
 
 #include <assert.h>
 #include <string>
@@ -64,6 +66,9 @@ CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type)
 // Elements
 CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type, const CPubKey& blinding_pubkey)
 {
+    LogPrintf("GetDestinationForKey: key=%s\n", HexStr(key.begin(), key.end()));
+    LogPrintf("GetDestinationForKey: blinding_pubkey=%s\n", HexStr(blinding_pubkey.begin(), blinding_pubkey.end()));
+    LogPrintf("GetDestinationForKey: key=%s\n", FormatOutputType(type));
     switch (type) {
     case OutputType::LEGACY: return PKHash(key, blinding_pubkey);
     case OutputType::P2SH_SEGWIT:

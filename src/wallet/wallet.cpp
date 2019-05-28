@@ -5384,6 +5384,7 @@ std::map<uint256, std::pair<CAsset, CAsset> > CWallet::GetReissuanceTokenTypes()
 
 CKey CWallet::GetBlindingKey(const CScript* script) const
 {
+    WalletLogPrintf("CWallet::GetBlindingKey: %s\n", HexStr(script->begin(), script->end()));
     CKey key;
 
     if (script != NULL) {

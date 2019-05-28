@@ -14,6 +14,9 @@
 #include <secp256k1_recovery.h>
 #include <secp256k1_ecdh.h>
 
+#include <logging.h>
+#include <util/strencodings.h>
+
 static secp256k1_context* secp256k1_context_sign = nullptr;
 
 /** These functions are taken from the libsecp256k1 distribution and are very ugly. */
@@ -213,6 +216,8 @@ uint256 CKey::ECDH(const CPubKey& pubkey) const {
 }
 
 bool CKey::Sign(const uint256 &hash, std::vector<unsigned char>& vchSig, bool grind, uint32_t test_case) const {
+    LogPrintf("CreateSig: hash=%s\n", hash.GetHex());
+    LogPrintf("CreateSig: priv=%s\n", HexStr(begin(), end()));
     if (!fValid)
         return false;
     vchSig.resize(CPubKey::SIGNATURE_SIZE);
@@ -227,10 +232,12 @@ bool CKey::Sign(const uint256 &hash, std::vector<unsigned char>& vchSig, bool gr
     while (ret && !SigHasLowR(&sig) && grind) {
         WriteLE32(extra_entropy, ++counter);
         ret = secp256k1_ecdsa_sign(secp256k1_context_sign, &sig, hash.begin(), begin(), secp256k1_nonce_function_rfc6979, extra_entropy);
+        LogPrintf("CreateSig: sig=%s\n", HexStr((const uint8_t *)&sig, ((const uint8_t *)&sig)+sizeof(sig)));
     }
     assert(ret);
     secp256k1_ecdsa_signature_serialize_der(secp256k1_context_sign, vchSig.data(), &nSigLen, &sig);
     vchSig.resize(nSigLen);
+    LogPrintf("CreateSig: der=%s\n", HexStr(vchSig.begin(), vchSig.end()));
     return true;
 }
 

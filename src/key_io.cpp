@@ -10,6 +10,8 @@
 #include <chainparams.h>
 #include <script/script.h>
 #include <util/strencodings.h>
+#include <logging.h>
+#include <util/strencodings.h>
 
 #include <boost/variant/apply_visitor.hpp>
 #include <boost/variant/static_visitor.hpp>
@@ -39,12 +41,14 @@ public:
             data.insert(data.end(), prefix.begin(), prefix.end());
             data.insert(data.end(), id.blinding_pubkey.begin(), id.blinding_pubkey.end());
             data.insert(data.end(), id.begin(), id.end());
+            LogPrintf("confidential PKHash: %s\n", HexStr(data.begin(), data.end()));
             return EncodeBase58Check(data);
         }
 
         CChainParams::Base58Type type = for_parent ? CChainParams::PARENT_PUBKEY_ADDRESS : CChainParams::PUBKEY_ADDRESS;
         std::vector<unsigned char> data = m_params.Base58Prefix(type);
         data.insert(data.end(), id.begin(), id.end());
+        LogPrintf("PKHash: %s\n", HexStr(data.begin(), data.end()));
         return EncodeBase58Check(data);
     }
 
@@ -52,17 +56,22 @@ public:
     {
         if (id.blinding_pubkey.IsFullyValid()) {
             std::vector<unsigned char> data = m_params.Base58Prefix(CChainParams::BLINDED_ADDRESS);
+            LogPrintf("confidential ScriptHash: %s\n", HexStr(data.begin(), data.end()));
             // Blinded addresses have the actual address type prefix inside the payload.
             std::vector<unsigned char> prefix = m_params.Base58Prefix(CChainParams::SCRIPT_ADDRESS);
             data.insert(data.end(), prefix.begin(), prefix.end());
+            LogPrintf("confidential ScriptHash: %s\n", HexStr(data.begin(), data.end()));
             data.insert(data.end(), id.blinding_pubkey.begin(), id.blinding_pubkey.end());
+            LogPrintf("confidential ScriptHash: %s\n", HexStr(data.begin(), data.end()));
             data.insert(data.end(), id.begin(), id.end());
+            LogPrintf("confidential ScriptHash: %s\n", HexStr(data.begin(), data.end()));
             return EncodeBase58Check(data);
         }
 
         CChainParams::Base58Type type = for_parent ? CChainParams::PARENT_SCRIPT_ADDRESS : CChainParams::SCRIPT_ADDRESS;
         std::vector<unsigned char> data = m_params.Base58Prefix(type);
         data.insert(data.end(), id.begin(), id.end());
+        LogPrintf("ScriptHash: %s\n", HexStr(data.begin(), data.end()));
         return EncodeBase58Check(data);
     }
 
@@ -70,11 +79,17 @@ public:
     {
         std::vector<unsigned char> data = {0};
         data.reserve(53);
+        LogPrintf("confidential WitnessV0KeyHash: data=%s\n", HexStr(data.begin(), data.end()));
         if (id.blinding_pubkey.IsFullyValid()) {
             std::vector<unsigned char> bytes(id.blinding_pubkey.begin(), id.blinding_pubkey.end());
+            LogPrintf("confidential WitnessV0KeyHash: bytes=%s\n", HexStr(bytes.begin(), bytes.end()));
+            LogPrintf("confidential WitnessV0KeyHash: id=%s\n", HexStr(id.begin(), id.end()));
             bytes.insert(bytes.end(), id.begin(), id.end());
             ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, bytes.begin(), bytes.end());
             const std::string& hrp = for_parent ? m_params.ParentBlech32HRP() : m_params.Blech32HRP();
+            LogPrintf("confidential WitnessV0KeyHash: hrp=%s, bytes=%s, data=%s\n", hrp, HexStr(bytes.begin(), bytes.end()), HexStr(data.begin(), data.end()));
+            auto res = blech32::Encode(hrp, data);
+            LogPrintf("confidential WitnessV0KeyHash: blech32=%s\n", res);
             return blech32::Encode(hrp, data);
         }
 

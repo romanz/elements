@@ -158,13 +158,18 @@ uint256 GenerateOutputRangeproofNonce(CTxOut& out, const CPubKey output_pubkey)
     // Generate ephemeral key for ECDH nonce generation
     CKey ephemeral_key;
     ephemeral_key.MakeNewKey(true);
+    LogPrintf("GenerateOutputRangeproofNonce: ephemeral_key=%s\n", HexStr(ephemeral_key.begin(), ephemeral_key.end()));
     CPubKey ephemeral_pubkey = ephemeral_key.GetPubKey();
     assert(ephemeral_pubkey.size() == CConfidentialNonce::nCommittedSize);
     out.nNonce.vchCommitment.resize(ephemeral_pubkey.size());
     memcpy(&out.nNonce.vchCommitment[0], &ephemeral_pubkey[0], ephemeral_pubkey.size());
+    LogPrintf("GenerateOutputRangeproofNonce: ephemeral_pubkey=%s\n", HexStr(ephemeral_pubkey.begin(), ephemeral_pubkey.end()));
     // Generate nonce
+    LogPrintf("GenerateOutputRangeproofNonce: output_pubkey=%s\n", HexStr(output_pubkey.begin(), output_pubkey.end()));
     uint256 nonce = ephemeral_key.ECDH(output_pubkey);
+    LogPrintf("GenerateOutputRangeproofNonce: ECDH nonce=%s\n", nonce.GetHex());
     CSHA256().Write(nonce.begin(), 32).Finalize(nonce.begin());
+    LogPrintf("GenerateOutputRangeproofNonce: SHA256 nonce=%s\n", nonce.GetHex());
     return nonce;
 }
 
@@ -178,11 +183,19 @@ bool GenerateRangeproof(std::vector<unsigned char>& rangeproof, const std::vecto
     unsigned char asset_message[64];
     memcpy(asset_message, asset.begin(), 32);
     memcpy(asset_message+32, asset_blindptrs[asset_blindptrs.size()-1], 32);
+    LogPrintf("GenerateRangeproof: amount=%lu\n", amount);
+    LogPrintf("GenerateRangeproof: asset_message=%s\n", HexStr(std::begin(asset_message), std::end(asset_message)));
+    LogPrintf("GenerateRangeproof: nonce=%s\n", nonce.GetHex());
 
     // Sign rangeproof
     // If min_value is 0, scriptPubKey must be unspendable
-    int res = secp256k1_rangeproof_sign(secp256k1_blind_context, rangeproof.data(), &nRangeProofLen, scriptPubKey.IsUnspendable() ? 0 : 1, &value_commit, value_blindptrs.back(), nonce.begin(), std::min(std::max((int)gArgs.GetArg("-ct_exponent", 0), -1),18), std::min(std::max((int)gArgs.GetArg("-ct_bits", 36), 1), 51), amount, asset_message, sizeof(asset_message), scriptPubKey.size() ? &scriptPubKey.front() : NULL, scriptPubKey.size(), &gen);
+    int exp = std::min(std::max((int)gArgs.GetArg("-ct_exponent", 0), -1),18);
+    int bits = std::min(std::max((int)gArgs.GetArg("-ct_bits", 36), 1), 51);
+    int min = scriptPubKey.IsUnspendable() ? 0 : 1;
+    LogPrintf("GenerateRangeproof: exp=%d, bits=%d, min=%d\n", exp, bits, min);
+    int res = secp256k1_rangeproof_sign(secp256k1_blind_context, rangeproof.data(), &nRangeProofLen, min, &value_commit, value_blindptrs.back(), nonce.begin(), exp, bits, amount, asset_message, sizeof(asset_message), scriptPubKey.size() ? &scriptPubKey.front() : NULL, scriptPubKey.size(), &gen);
     rangeproof.resize(nRangeProofLen);
+    LogPrintf("GenerateRangeproof: proof=%s\n", HexStr(rangeproof.begin(), rangeproof.end()));
     return (res == 1);
 }
 
